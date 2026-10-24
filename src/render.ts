@@ -123,21 +123,25 @@ function renderQpTr(node: Element): HTMLElement {
 
     qpNode.appendChild(renderNodeIcon(node));
 
-    let label = element("div");
+    let label = element("div", "qp-label");
     label.appendChild(document.createTextNode(getNodeLabel(node)));
     qpNode.appendChild(label);
 
     let label2 = getNodeLabel2(node);
     if (label2 != null) {
-        let label2Div = element("div");
+        let label2Div = element("div", "qp-label2");
         label2Div.appendChild(document.createTextNode(label2));
         qpNode.appendChild(label2Div);
     }
 
     let costLabel = getNodeCostLabel(node);
     if (costLabel != null) {
-        let costDiv = element("div");
+        let costDiv = element("div", "qp-cost");
         costDiv.appendChild(document.createTextNode(costLabel));
+        let level = getNodeCostLevel(node);
+        if (level != null) {
+            costDiv.setAttribute("data-cost-level", level);
+        }
         qpNode.appendChild(costDiv);
     }
 
@@ -303,6 +307,17 @@ function getNodeLabel2(node: Element): string {
         return name;
     }
     return null;
+}
+
+/**
+ * Share of the statement cost, as "low" (10 % or more), "medium" (25 %) or "high" (50 %),
+ * so the stylesheet can color the expensive operators; null below 10 %.
+ */
+function getNodeCostLevel(node: Element): string {
+    if (node.localName != "RelOp") return null;
+    let share = divide(getEstimatedOperatorCost(node), getStatementTotalCost(node));
+    if (!(share >= 0.1)) return null;
+    return share >= 0.5 ? "high" : share >= 0.25 ? "medium" : "low";
 }
 
 /** Cost label (mode="NodeCostLabel"), or null for plain statements. */

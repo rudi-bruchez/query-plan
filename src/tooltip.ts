@@ -7,6 +7,9 @@ const TOOLTIP_TIMEOUT = 500;
 let timeoutId: number = null;
 // The currently visible tooltip, if one is shown; Otherwise, null.
 let currentTooltip: HTMLElement = null;
+// Element appended to the body around the tooltip: it carries the theme of the plan,
+// since the tooltip leaves the .qp-root whose variables it is styled with.
+let currentLayer: HTMLElement = null;
 // X & Y coordinates of the mouse cursor
 let cursorX: number = 0;
 let cursorY: number = 0;
@@ -87,7 +90,16 @@ function showTooltip(node: Element, tooltip: HTMLElement) {
     }
 
     currentTooltip = tooltip;
-    document.body.appendChild(currentTooltip);
+    currentLayer = document.createElement("div");
+    currentLayer.className = "qp-tt-layer";
+    let root = findAncestor(node, "qp-root");
+    if (root != null) {
+        for (let i = 0; i < root.classList.length; i++) {
+            if (root.classList[i].indexOf("qp-theme-") == 0) currentLayer.classList.add(root.classList[i]);
+        }
+    }
+    currentLayer.appendChild(currentTooltip);
+    document.body.appendChild(currentLayer);
     currentTooltip.style.left = cursorX + "px";
     currentTooltip.style.top = positionY + "px";
     currentTooltip.addEventListener("mouseout", function (event) {
@@ -106,8 +118,9 @@ function getDocumentHeight() {
 
 function hideTooltip() {
     if (currentTooltip != null) {
-        document.body.removeChild(currentTooltip);
+        document.body.removeChild(currentLayer);
         currentTooltip = null;
+        currentLayer = null;
     }
 }
 

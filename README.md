@@ -8,6 +8,18 @@ that renders plans in pure TypeScript instead of the original XSLT stylesheet, b
 removed from browsers. The rendered markup is identical to the XSLT output, so existing CSS
 and tooling keep working.
 
+This copy (`rudi-bruchez/query-plan`) adds, on top of that fork:
+
+- the operator icons of the Microsoft documentation, shown at 24 px, with Key Lookup and
+  RID Lookup drawn the right way round (SSMS swaps them) and a RID Lookup that is no longer
+  described as a Key Lookup;
+- the row count on each arrow, as Plan Explorer shows it;
+- sober nodes, the cost of expensive operators in color, and a dark theme;
+- a `fitWidth` option that scales a wide plan down to its container;
+- `visionneuse/`, the standalone viewer served at https://sqlplan.pachadata.com.
+
+The build needs `NODE_OPTIONS=--openssl-legacy-provider` on Node 17 and later (webpack 4).
+
 ![html-query-plan screenshot](screenshot.png "Screenshot")
 
 To use in a web page:
@@ -42,6 +54,8 @@ Additional options can be passed using the 3rd argument:
 | Option | Default | Description | 
 | --- | --- | --- | 
 | jsTooltips | true | Set to `false` to use CSS tooltips. | 
+| theme | `"light"` | `"dark"`, or `"auto"` to follow `prefers-color-scheme`. `QP.setTheme(container, theme)` changes it afterwards, for a page with a theme switch. |
+| fitWidth | 0 | Smallest scale (0 to 1) to which a plan wider than its container is reduced; a click toggles full size. 0 never scales. | 
 
 ## Pre-rendered plans
 
@@ -71,7 +85,13 @@ Meaning of the "overlay" icons for nodes:
 | ![Parallel Icon](images/iconpar.png) | The node was executed in parallel. |
 | ![Warning Icon](images/iconwarn.png) | There are one or more warnings on the node. |
 
-All icons are adapted from the Fat Cow "Farm Fresh" web icons pack, which can be found at http://www.fatcow.com/free-icons.
+The operator icons are those of the Microsoft documentation
+([MicrosoftDocs/sql-docs](https://github.com/MicrosoftDocs/sql-docs), *Showplan logical and
+physical operators reference*), © Microsoft, licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); their light background was made
+transparent. `tools/sprite-microsoft.py <sql-docs clone>` rebuilds `css/qp_icons.png` and the
+icon block of `css/qp.css` from them. The three overlays above come from the Fat Cow
+"Farm Fresh" web icons pack, http://www.fatcow.com/free-icons (`tools/overlays.png`).
 
 ## Building
 
