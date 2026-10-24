@@ -27,7 +27,8 @@
 <div id="rendu"></div>
 <div id="pied"></div>
 <script>
-// Usage : https://sqlplan.pachadata.com/?p=<nom>[&theme=light|dark] affiche plans/<nom>.sqlplan,
+// Usage : https://sqlplan.pachadata.com/?p=<nom>[&theme=light|dark][&node=<NodeId>] affiche plans/<nom>.sqlplan,
+// ou, avec node, l'opérateur de ce NodeId et ce qu'il lit ;
 // dans le thème du système par défaut ; une page claire (Moodle) qui l'intègre passe theme=light.
 var params = new URLSearchParams(location.search);
 var nom = params.get("p") || "";
@@ -43,7 +44,8 @@ if (!/^[\w-]+$/.test(nom)) {
   fetch(url)
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
     .then(function (xml) {
-      QP.showPlan(rendu, xml, { theme: theme, fitWidth: 0.6 });
+      var node = params.get("node");
+      QP.showPlan(rendu, xml, { theme: theme, fitWidth: 0.6, nodeId: /^\d+$/.test(node || "") ? node : null });
       var a = document.createElement("a");
       a.href = url; a.download = nom + ".sqlplan"; a.textContent = "Télécharger le plan (à ouvrir dans SSMS)";
       pied.appendChild(a);

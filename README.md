@@ -56,6 +56,7 @@ Additional options can be passed using the 3rd argument:
 | jsTooltips | true | Set to `false` to use CSS tooltips. | 
 | theme | `"light"` | `"dark"`, or `"auto"` to follow `prefers-color-scheme`. `QP.setTheme(container, theme)` changes it afterwards, for a page with a theme switch. |
 | fitWidth | 0 | Smallest scale (0 to 1) to which a plan wider than its container is reduced; a click toggles full size. 0 never scales. | 
+| nodeId | null | NodeId of one operator: draws it and the operators under it, below its statement, to illustrate part of a plan. Costs stay shares of the whole statement. Throws when no operator has that NodeId. |
 
 ## Pre-rendered plans
 

@@ -14,13 +14,34 @@
 const QP_TR_NAMES = ["RelOp", "StmtSimple", "StmtUseDb", "StmtCond", "StmtCursor", "Operation"];
 
 /**
- * Renders the given showplan XML document, returning the .qp-root element.
+ * Renders the given showplan XML document, returning the .qp-root element. With nodeId,
+ * only the operator of that NodeId and the operators under it are drawn, below the header
+ * of their statement; the XML is not cut, so costs stay shares of the whole statement.
  */
-function renderPlan(xmlDoc: Document): HTMLElement {
+function renderPlan(xmlDoc: Document, nodeId?: string): HTMLElement {
     let root = element("div", "qp-root");
     let showPlanXml = xmlDoc.documentElement;
     if (showPlanXml == null || showPlanXml.localName != "ShowPlanXML") {
         return root;
+    }
+    if (nodeId != null) {
+        let relOps = xmlDoc.getElementsByTagNameNS(showPlanXml.namespaceURI, "RelOp");
+        for (let i = 0; i < relOps.length; i++) {
+            if (getAttr(relOps[i], "NodeId") == nodeId) {
+                let statement = findStatement(relOps[i]);
+                renderStatementHeader(root, statement);
+                let tr = renderQpTr(relOps[i]);
+                // Lines find the XML of a node through the statement id of an ancestor .qp-tr,
+                // which the statement's own .qp-tr carries in a whole plan
+                let statementId = statement == null ? null : getAttr(statement, "StatementId");
+                if (statementId != null) {
+                    tr.setAttribute("data-statement-id", statementId);
+                }
+                root.appendChild(tr);
+                return root;
+            }
+        }
+        throw new Error("No operator with NodeId " + nodeId + " in this plan");
     }
     let statements = selectPath(showPlanXml, ["BatchSequence", "Batch", "Statements"]);
     for (let i = 0; i < statements.length; i++) {
@@ -32,7 +53,31 @@ function renderPlan(xmlDoc: Document): HTMLElement {
     return root;
 }
 
+/** The statement element (StmtSimple, StmtCursor...) a RelOp belongs to. */
+function findStatement(relOp: Element): Element {
+    let e = relOp.parentNode;
+    while (e != null && e.nodeType == 1) {
+        let parent = e.parentNode;
+        if (parent != null && (<Element>parent).localName == "Statements") return <Element>e;
+        e = parent;
+    }
+    return null;
+}
+
 function renderStatement(root: HTMLElement, statement: Element) {
+    renderStatementHeader(root, statement);
+
+    // <xsl:apply-templates select="." mode="QpTr" /> - including the XSLT built-in
+    // rule that recurses into children of elements with no matching template.
+    let matched: Element[] = [];
+    collectQpTrNodes(statement, matched);
+    for (let i = 0; i < matched.length; i++) {
+        root.appendChild(renderQpTr(matched[i]));
+    }
+}
+
+function renderStatementHeader(root: HTMLElement, statement: Element) {
+    if (statement == null) return;
     let header = element("div", "qp-statement-header");
     let headerRow = element("div", "qp-statement-header-row");
     let text = element("div");
@@ -45,14 +90,6 @@ function renderStatement(root: HTMLElement, statement: Element) {
         header.appendChild(renderMissingIndex(missingIndexGroups[i]));
     }
     root.appendChild(header);
-
-    // <xsl:apply-templates select="." mode="QpTr" /> - including the XSLT built-in
-    // rule that recurses into children of elements with no matching template.
-    let matched: Element[] = [];
-    collectQpTrNodes(statement, matched);
-    for (let i = 0; i < matched.length; i++) {
-        root.appendChild(renderQpTr(matched[i]));
-    }
 }
 
 function renderMissingIndex(group: Element): HTMLElement {

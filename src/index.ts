@@ -11,19 +11,25 @@ interface Options {
      * Smallest scale (0 to 1) to which a plan wider than its container is reduced to fit;
      * a click toggles full size. 0, the default, never scales.
      */
-    fitWidth?: number
+    fitWidth?: number,
+    /**
+     * NodeId of the operator to draw with the operators under it, instead of the whole
+     * plan; costs stay shares of the whole statement. Throws if no operator has it.
+     */
+    nodeId?: string
 }
 
 function showPlan(container: Element, planXml: string, options?: Options) {
     options = setDefaults(options, {
         jsTooltips: true,
         theme: "light",
-        fitWidth: 0
+        fitWidth: 0,
+        nodeId: null
     });
 
     let xmlDoc = new DOMParser().parseFromString(planXml, "text/xml");
     container.innerHTML = "";
-    let root = renderPlan(xmlDoc);
+    let root = renderPlan(xmlDoc, options.nodeId);
     root.classList.add("qp-theme-" + options.theme);
     container.appendChild(root);
     container["xml"] = xmlDoc;

@@ -101,6 +101,33 @@ describe("Options", () => {
 
     });
 
+    describe("nodeId", () => {
+
+        it("Draws only the operator of that NodeId and what is under it, below its statement", () => {
+            let container = document.createElement("div");
+            QP.showPlan(container, plan.KeyLookup, { nodeId: "5" });
+            let nodes = container.querySelectorAll(".qp-node");
+            // the Key Lookup is a leaf: one node, and the statement header above it
+            assert.equal(1, nodes.length);
+            assert.equal("5", nodes[0].getAttribute("data-node-id"));
+            assert.isNotNull(container.querySelector(".qp-statement-header"));
+            // its cost is still its share of the whole statement
+            assert.include(nodes[0].querySelector(".qp-cost").textContent, "100%");
+        });
+
+        it("Draws the whole subtree under an inner operator", () => {
+            let container = document.createElement("div");
+            QP.showPlan(container, plan.KeyLookup, { nodeId: "0" });
+            let ids = Array.prototype.map.call(container.querySelectorAll(".qp-node"), (n: Element) => n.getAttribute("data-node-id"));
+            assert.deepEqual(["0", "3", "5"], ids);
+        });
+
+        it("Refuses a NodeId the plan does not have", () => {
+            assert.throws(() => QP.showPlan(document.createElement("div"), plan.KeyLookup, { nodeId: "99" }), "NodeId 99");
+        });
+
+    });
+
     describe("cost level", () => {
 
         it("Marks the share of the statement cost of expensive operators only", () => {
