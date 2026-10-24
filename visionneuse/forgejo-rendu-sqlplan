@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Moteur de rendu externe de Forgejo pour les .sqlplan : lit le plan sur l'entrée
+standard et écrit une page HTML qui le dessine avec la bibliothèque servie par
+https://sqlplan.pachadata.com. Forgejo affiche cette page dans une iframe isolée
+(RENDER_CONTENT_MODE = iframe), seul mode où le JavaScript s'exécute.
+
+Installé sur ryokan dans /usr/local/bin ; configuration dans /etc/forgejo/app.ini :
+
+    [markup.sqlplan]
+    ENABLED = true
+    FILE_EXTENSIONS = .sqlplan
+    RENDER_COMMAND = /usr/local/bin/forgejo-rendu-sqlplan
+    IS_INPUT_FILE = false
+    RENDER_CONTENT_MODE = iframe
+    NEED_POSTPROCESS = false
+
+Sans NEED_POSTPROCESS = false, Forgejo change les URL du XML en liens et préfixe les id
+de user-content- ; le conteneur est donc créé par le script plutôt que trouvé par son id.
+"""
+import json
+import sys
+
+BIBLIOTHEQUE = "https://sqlplan.pachadata.com/qp"
+
+xml = sys.stdin.buffer.read().decode("utf-8-sig", errors="replace")
+# Le plan entre dans un <script> : "</" fermerait la balise avant la fin de la chaîne
+plan = json.dumps(xml).replace("</", "<\\/")
+
+sys.stdout.write(f"""<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="{BIBLIOTHEQUE}/qp.css">
+<script src="{BIBLIOTHEQUE}/qp.min.js"></script>
+<style>
+  :root {{ color-scheme: light dark; }}
+  body {{ margin: 0; padding: .5rem; background: #fff; }}
+  @media (prefers-color-scheme: dark) {{ body {{ background: #0d1117; }} }}
+</style>
+</head>
+<body>
+<script>
+var conteneur = document.body.appendChild(document.createElement("div"));
+QP.showPlan(conteneur, {plan}, {{ theme: "auto", fitWidth: 0.6 }});
+</script>
+</body>
+</html>
+""")
