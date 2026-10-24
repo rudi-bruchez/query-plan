@@ -10,4 +10,4 @@ rsync -a --delete --exclude=/qp/ --chmod=D755,F644 \
   ryokan:/var/www/sqlplan.pachadata.com/html/
 rsync -a --chmod=F644 dist/qp.min.js css/qp.css css/qp_icons.png \
   ryokan:/var/www/sqlplan.pachadata.com/html/qp/
-echo "Publié : https://sqlplan.pachadata.com/?p=<nom du plan sans .sqlplan>"
+echo "Publié : https://sqlplan.pachadata.com/?p=<nom du plan sans extension (.sqlplan ou .pgplan)>"
