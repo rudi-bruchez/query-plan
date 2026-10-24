@@ -70,4 +70,25 @@ describe("IndexScan Nodes", () => {
 
     });
 
+    /*
+    * SSMS gives a RID Lookup the tree icon of an index and a Key Lookup a page icon; here a
+    * RID Lookup shows a heap, and its tooltip and description no longer say "Key Lookup".
+    */
+    it("Gives a RID Lookup its own icon, operation names and description", () => {
+
+        let container = helper.showPlan(plan.rid_lookup);
+        let ridLookup = helper.findNodeById(container, "3");
+        assert.isNotNull(ridLookup.element.querySelector(".qp-icon-RIDLookup"));
+        assert.isNull(ridLookup.element.querySelector(".qp-icon-KeyLookup"));
+        let tooltip = ridLookup.element.querySelector(".qp-tt").textContent;
+        assert.include(tooltip, "Physical OperationRID Lookup");
+        assert.include(tooltip, "row identifier (RID)");
+        assert.notInclude(tooltip, "Key Lookup");
+
+        let keyLookup = helper.findNodeById(helper.showPlan(plan.KeyLookup), "5");
+        assert.isNotNull(keyLookup.element.querySelector(".qp-icon-KeyLookup"));
+        assert.include(keyLookup.element.querySelector(".qp-tt").textContent, "Physical OperationKey Lookup");
+
+    });
+
 });

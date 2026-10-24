@@ -165,6 +165,15 @@ function renderQpTr(node: Element): HTMLElement {
     return tr;
 }
 
+/**
+ * "Key Lookup" or "RID Lookup" for a lookup operator, null otherwise. Both carry
+ * IndexScan/@Lookup; a Key Lookup has PhysicalOp "Clustered Index Seek".
+ */
+function lookupKind(node: Element): string {
+    if (getPath(node, ["IndexScan"], "Lookup") == null) return null;
+    return getAttr(node, "PhysicalOp") == "RID Lookup" ? "RID Lookup" : "Key Lookup";
+}
+
 /** Renders the node icon (template name="NodeIcon"). */
 function renderNodeIcon(node: Element): HTMLElement {
     let physicalOp = getAttr(node, "PhysicalOp");
@@ -177,8 +186,9 @@ function renderNodeIcon(node: Element): HTMLElement {
         iconName = cursorType;
     } else if (operationType != null) {
         iconName = operationType;
-    } else if (getPath(node, ["IndexScan"], "Lookup") != null) {
-        iconName = "KeyLookup";
+    } else if (lookupKind(node) != null) {
+        // SSMS swaps these two icons; a RID Lookup reads a heap, not a clustered index
+        iconName = removeSpaces(lookupKind(node));
     } else if (getPath(node, ["IndexScan"], "Storage") == "ColumnStore") {
         iconName = "ColumnStoreIndexScan";
     } else if (getPath(node, ["ScalarInsert", "Object"], "Storage") == "ColumnStore") {
@@ -383,7 +393,8 @@ function getToolTipDescription(node: Element): string {
 
     let physicalOp = getAttr(node, "PhysicalOp");
     if (physicalOp == "Parallelism") return "An operation involving parallelism.";
-    if (getPath(node, ["IndexScan"], "Lookup") != null) return "Uses a supplied clustering key to lookup on a table that has a clustered index.";
+    if (lookupKind(node) == "RID Lookup") return "Uses a supplied row identifier (RID) to lookup on a heap.";
+    if (lookupKind(node) != null) return "Uses a supplied clustering key to lookup on a table that has a clustered index.";
     if (physicalOp == "Index Spool") return "Reformats the data from the input into a temporary index, which is then used for seeking with the supplied seek predicate.";
     if (physicalOp == "Adaptive Join") return "Chooses dynamically between hash join and nested loops.";
     if (physicalOp == "Index Seek") return "Scan a particular range of rows from a nonclustered index.";
@@ -409,11 +420,11 @@ function renderToolTipGrid(node: Element): HTMLElement {
     addRow(table, "Cached plan size", cachedPlanSize + " KB", cachedPlanSize != null);
 
     let physicalOp = getAttr(node, "PhysicalOp");
-    let isLookup = getPath(node, ["IndexScan"], "Lookup") != null;
-    addRow(table, "Physical Operation", isLookup ? "Key Lookup" : physicalOp, physicalOp != null);
+    let lookup = lookupKind(node);
+    addRow(table, "Physical Operation", lookup || physicalOp, physicalOp != null);
 
     let logicalOp = getAttr(node, "LogicalOp");
-    addRow(table, "Logical Operation", isLookup ? "Key Lookup" : logicalOp, logicalOp != null);
+    addRow(table, "Logical Operation", lookup || logicalOp, logicalOp != null);
 
     let actualJoinType = getPath(node, ["RunTimeInformation", "RunTimeCountersPerThread"], "ActualJoinType");
     addRow(table, "Actual Join Type", actualJoinType, actualJoinType != null);
