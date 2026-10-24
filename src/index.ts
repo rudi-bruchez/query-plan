@@ -38,6 +38,7 @@ function showPlan(container: Element, planXml: string, options?: Options) {
     if (options.jsTooltips) {
         initTooltip(container);
     }
+    container.classList.toggle("qp-fit", options.fitWidth > 0);
     if (options.fitWidth > 0) {
         fitToWidth(container, root, options.fitWidth);
     }
@@ -48,7 +49,6 @@ function showPlan(container: Element, planXml: string, options?: Options) {
  * toggle between that size and full size. CSS zoom keeps the lines and tooltips aligned.
  */
 function fitToWidth(container: Element, root: HTMLElement, minScale: number) {
-    container.classList.add("qp-fit");
     let scale = Math.max(minScale, Math.min(1, container.clientWidth / container.scrollWidth));
     if (!(scale < 1)) return;
     let style = <any>root.style;

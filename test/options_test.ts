@@ -75,6 +75,7 @@ describe("Options", () => {
             let container = attached(300);
             try {
                 QP.showPlan(container, plan.computeScalarPassThrough, { fitWidth: 0.6 });
+                assert.isTrue(container.classList.contains("qp-fit"));
                 assert.equal("0.6", zoomOf(container));
                 (<HTMLElement>container.querySelector(".qp-root")).click();
                 assert.equal("1", zoomOf(container));
@@ -91,8 +92,11 @@ describe("Options", () => {
             try {
                 QP.showPlan(wide, plan.KeyLookup, { fitWidth: 0.6 });
                 assert.equal("", zoomOf(wide));
+                QP.showPlan(narrow, plan.computeScalarPassThrough, { fitWidth: 0.6 });
                 QP.showPlan(narrow, plan.computeScalarPassThrough);
                 assert.equal("", zoomOf(narrow));
+                // a later call without the option leaves no scrolling container behind
+                assert.isFalse(narrow.classList.contains("qp-fit"));
             } finally {
                 wide.remove();
                 narrow.remove();
@@ -113,6 +117,9 @@ describe("Options", () => {
             assert.isNotNull(container.querySelector(".qp-statement-header"));
             // its cost is still its share of the whole statement
             assert.include(nodes[0].querySelector(".qp-cost").textContent, "100%");
+            // the stylesheet targets these classes: name, then object
+            assert.include(nodes[0].querySelector(".qp-label").textContent, "Key Lookup");
+            assert.include(nodes[0].querySelector(".qp-label2").textContent, "[");
         });
 
         it("Draws the whole subtree under an inner operator", () => {

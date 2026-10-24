@@ -83,7 +83,10 @@ function nodeToRows(node: Node): number {
  */
 function rowsToLabel(rows: number): string {
     if (rows == null || isNaN(rows)) return "";
-    return Math.round(rows).toLocaleString(document.documentElement.lang || undefined);
+    let lang = document.documentElement.lang || undefined;
+    // An estimate below one row would round to 0, which reads as "no rows"
+    if (rows > 0 && rows < 1) return rows.toLocaleString(lang, { maximumSignificantDigits: 2 });
+    return Math.round(rows).toLocaleString(lang);
 }
 
 /** Approximate width in pixels of a row count label (9px font). */

@@ -139,6 +139,8 @@ describe("lines.ts", () => {
             assert.equal("", rowsToLabel(null));
             assert.equal("", rowsToLabel(NaN));
             assert.equal((42910).toLocaleString(document.documentElement.lang || undefined), rowsToLabel(42909.6));
+            assert.equal((0.3).toLocaleString(document.documentElement.lang || undefined), rowsToLabel(0.3));
+            assert.equal("0", rowsToLabel(0));
         });
 
         it("Labels every arrow with the actual rows", () => {

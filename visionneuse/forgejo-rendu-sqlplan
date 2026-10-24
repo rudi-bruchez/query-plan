@@ -22,7 +22,13 @@ import sys
 
 BIBLIOTHEQUE = "https://sqlplan.pachadata.com/qp"
 
-xml = sys.stdin.buffer.read().decode("utf-8-sig", errors="replace")
+# Le rendu tient le plan plusieurs fois en mémoire : au-delà, le fichier se télécharge
+LIMITE = 32 * 1024 * 1024
+donnees = sys.stdin.buffer.read(LIMITE + 1)
+if len(donnees) > LIMITE:
+    sys.stdout.write("<p>Plan de plus de 32 Mo : le télécharger pour l'ouvrir dans SSMS.</p>")
+    sys.exit(0)
+xml = donnees.decode("utf-8-sig", errors="replace")
 # Le plan entre dans un <script> : "</" fermerait la balise avant la fin de la chaîne
 plan = json.dumps(xml).replace("</", "<\\/")
 
