@@ -288,3 +288,5 @@ div.qp-node:hover .qp-tt {
     .qp-root polyline {
         pointer-events: auto;
     }
+
+.qp-root .qp-row-count { font: 9px sans-serif; fill: #333; }

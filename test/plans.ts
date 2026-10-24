@@ -8,6 +8,7 @@ var plan = {
     ClusteredIndexScan: require("raw-loader!../test_plans/clustered index scan.sqlplan"),
     ClusteredIndexSeek: require("raw-loader!../test_plans/clustered index seek.sqlplan"),
     commentScoreDistribution: require("raw-loader!../test_plans/stack overflow/my comment score distribution.sqlplan"),
+    computeScalarPassThrough: require("raw-loader!../test_plans/compute_scalar_pass_through.sqlplan"),
     cursor2: require("raw-loader!../test_plans/Cursors/cursor2.sqlplan"),
     cursorPlan: require("raw-loader!../test_plans/Cursors/cursorPlan.sqlplan"),
     index_spool: require("raw-loader!../test_plans/index_spool.sqlplan"),

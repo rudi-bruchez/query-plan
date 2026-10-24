@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { arrowPath, thicknessesToOffsets, nodeToThickness } from "../src/lines";
+import { arrowPath, thicknessesToOffsets, nodeToThickness, rowsToLabel } from "../src/lines";
 import { Node } from "../src";
 import * as helper from "./helper";
 import { plan } from "./plans";
@@ -131,6 +131,31 @@ describe("lines.ts", () => {
     
         });
     
+    });
+
+    describe("row counts", () => {
+
+        it("Formats a row count, rounding estimates and skipping missing values", () => {
+            assert.equal("", rowsToLabel(null));
+            assert.equal("", rowsToLabel(NaN));
+            assert.equal((42910).toLocaleString(document.documentElement.lang || undefined), rowsToLabel(42909.6));
+        });
+
+        it("Labels every arrow with the actual rows", () => {
+            let container = helper.showPlan(plan.rid_lookup);
+            let labels = container.querySelectorAll(".qp-row-count");
+            assert.equal(container.querySelectorAll("polyline").length, labels.length);
+            assert.equal("4", container.querySelector(".qp-row-count[data-node-id='0']").textContent);
+        });
+
+        it("Passes actual rows through an operator without runtime counters", () => {
+            // Node 8 is a Compute Scalar estimated at 42,909.7 rows, without RunTimeInformation;
+            // its only child, a Nested Loops, returned 16,810 rows
+            let container = helper.showPlan(plan.computeScalarPassThrough);
+            let label = container.querySelector(".qp-row-count[data-node-id='8']");
+            assert.equal(rowsToLabel(16810), label.textContent);
+        });
+
     });
 
     describe("nodeToThickness", () => {

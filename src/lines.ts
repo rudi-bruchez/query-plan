@@ -57,6 +57,41 @@ function thicknessesToOffsets(thicknesses: Array<number>, gap: number): Array<nu
 }
 
 /**
+ * Actual rows flowing out of a node. An operator without runtime counters in an actual
+ * plan (typically a Compute Scalar) passes through the rows of its only child.
+ * @param node Node to count the rows of.
+ */
+function actualRowsOf(node: Node): number {
+    if (node.relOp != null && node.relOp.actualRows != null) return node.relOp.actualRows;
+    let children = node.children;
+    return children != null && children.length == 1 ? actualRowsOf(children[0]) : null;
+}
+
+/**
+ * Rows flowing out of a node: actual rows when the plan has them, estimated rows otherwise.
+ * @param node Node to count the rows of.
+ */
+function nodeToRows(node: Node): number {
+    if (node.relOp == null) return null;
+    let actual = actualRowsOf(node);
+    return actual == null ? node.relOp.estimatedRows : actual;
+}
+
+/**
+ * Formats a row count for the label drawn on an arrow, in the page's language.
+ * @param rows Row count, or null.
+ */
+function rowsToLabel(rows: number): string {
+    if (rows == null || isNaN(rows)) return "";
+    return Math.round(rows).toLocaleString(document.documentElement.lang || undefined);
+}
+
+/** Approximate width in pixels of a row count label (9px font). */
+function labelWidth(label: string): number {
+    return label.length == 0 ? 0 : label.length * 5.5 + 6;
+}
+
+/**
  * Works out how thick a line should be for a node.
  * @param node Node to work out the line thickness for.
  */
@@ -80,11 +115,13 @@ function nodeToThickness(node: Node): number {
 function drawLinesForParent(draw: SVG.Doc, clientRect: ClientRect, parent: Node) {
     let children = parent.children;
     let thicknesses = children.map(nodeToThickness);
-    let padding = thicknesses.reduce((a, b) => a + b, 0) + lineSeparation * (children.length -1);
+    let labels = children.map(c => rowsToLabel(nodeToRows(c)));
+    let padding = thicknesses.reduce((a, b) => a + b, 0) + lineSeparation * (children.length -1)
+        + Math.max(0, ...labels.map(labelWidth));
     addPaddingForParent(parent, padding);
     let offsets = thicknessesToOffsets(thicknesses, lineSeparation);
     for (let i = 0; i < children.length; i++) {
-        drawArrowBetweenNodes(draw, clientRect, parent, children[i], thicknesses[i], offsets[i]);
+        drawArrowBetweenNodes(draw, clientRect, parent, children[i], thicknesses[i], offsets[i], labels[i]);
     }
 }
 
@@ -96,8 +133,9 @@ function drawLinesForParent(draw: SVG.Doc, clientRect: ClientRect, parent: Node)
  * @param child Node element to which to draw the arrow (rightmost node).
  * @param thickness Line thickness, in pixels.
  * @param offset Offset from the centerline, in pixels.
+ * @param label Row count drawn above the arrow, next to the child node.
  */
-function drawArrowBetweenNodes(draw: SVG.Doc, clientRect: ClientRect, parent: Node, child: Node, thickness: number, offset: number) {
+function drawArrowBetweenNodes(draw: SVG.Doc, clientRect: ClientRect, parent: Node, child: Node, thickness: number, offset: number, label: string) {
     let parentOffset = parent.element.getBoundingClientRect();
     let childOffset = child.element.getBoundingClientRect();
 
@@ -125,6 +163,13 @@ function drawArrowBetweenNodes(draw: SVG.Doc, clientRect: ClientRect, parent: No
     };
     let bendOffsetX = midOffsetLeft - clientRect.left - offset;
     drawArrow(draw, toPoint, fromPoint, bendOffsetX, thickness, child.nodeId, child.statementId);
+    if (label) {
+        let text = draw.plain(label).addClass("qp-row-count")
+            .attr({ x: fromPoint.x - 3, y: fromPoint.y - thickness / 2 - 3, "text-anchor": "end" });
+        if (child.nodeId) {
+            text.data("node-id", child.nodeId);
+        }
+    }
 }
 
 /**
@@ -173,4 +218,4 @@ function arrowPath(to: Point, from: Point, bendX: number, thickness: number) {
     ];
 }
 
-export { drawLines, arrowPath, thicknessesToOffsets, nodeToThickness }
+export { drawLines, arrowPath, thicknessesToOffsets, nodeToThickness, rowsToLabel }
