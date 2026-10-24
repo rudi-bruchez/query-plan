@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Plan d'exécution</title>
+<link rel="stylesheet" href="qp/qp.css">
+<script src="qp/qp.min.js"></script>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fff; color: #000; }
+  #rendu { overflow-x: auto; padding: .5rem; }
+  #pied { font-size: .85rem; padding: 0 .5rem .5rem; }
+</style>
+</head>
+<body>
+<div id="rendu"></div>
+<div id="pied"></div>
+<script>
+// Usage : https://sqlplan.pachadata.com/?p=<nom> affiche plans/<nom>.sqlplan
+var nom = new URLSearchParams(location.search).get("p") || "";
+var rendu = document.getElementById("rendu");
+var pied = document.getElementById("pied");
+if (!/^[\w-]+$/.test(nom)) {
+  rendu.textContent = "Paramètre ?p= manquant ou invalide.";
+} else {
+  var url = "plans/" + nom + ".sqlplan";
+  fetch(url)
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function (xml) {
+      QP.showPlan(rendu, xml);
+      // ponytail: réduction plafonnée à 60 %, au-delà le texte devient illisible
+      var plan = rendu.firstElementChild;
+      var ajuste = Math.max(0.6, Math.min(1, rendu.clientWidth / rendu.scrollWidth));
+      if (ajuste < 1) {
+        plan.style.zoom = ajuste;
+        rendu.title = "Cliquer pour basculer en taille réelle";
+        rendu.style.cursor = "zoom-in";
+        rendu.addEventListener("click", function () {
+          var reel = plan.style.zoom !== "1";
+          plan.style.zoom = reel ? 1 : ajuste;
+          rendu.style.cursor = reel ? "zoom-out" : "zoom-in";
+        });
+      }
+      var a = document.createElement("a");
+      a.href = url; a.download = nom + ".sqlplan"; a.textContent = "Télécharger le plan (à ouvrir dans SSMS)";
+      pied.appendChild(a);
+    })
+    .catch(function () { rendu.textContent = "Le plan « " + nom + " » n'a pas pu être chargé."; });
+}
+</script>
+</body>
+</html>
