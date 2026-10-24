@@ -120,7 +120,11 @@ def main():
             for j, im in enumerate(overlays.values()):
                 sprite.paste(im, (x + (j % 2) * 16, y + (j // 2) * 16))
         else:
-            sprite.alpha_composite(clear_background(Image.open(icons_dir / f"icon-{f}.png").convert("RGBA")), (x, y))
+            icon = clear_background(Image.open(icons_dir / f"icon-{f}.png").convert("RGBA"))
+            if icon.size != (CELL, CELL):
+                # A few sources are 16 px (Filter): drawn as is, they fill a corner of the cell
+                icon = icon.resize((CELL, CELL), Image.LANCZOS)
+            sprite.alpha_composite(icon, (x, y))
     sprite.save(root / "css" / "qp_icons.png", optimize=True)
 
     size = f"{COLS * SHOWN:g}px {rows * SHOWN:g}px"

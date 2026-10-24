@@ -86,6 +86,22 @@ describe("Options", () => {
             }
         });
 
+        it("Scales on the plan's width, not on the tooltips hidden past its right edge", () => {
+            let tooltips = document.head.appendChild(document.createElement("style"));
+            tooltips.textContent = ".qp-root, .qp-node { position: relative; } .qp-tt { position: absolute; left: 0; width: 6000px; }";
+            let container = attached(300);
+            try {
+                QP.showPlan(container, plan.computeScalarPassThrough, { fitWidth: 0.1, jsTooltips: false });
+                let zoom = parseFloat(zoomOf(container));
+                assert.isAtLeast(zoom, 0.19);
+                assert.isAtMost(zoom, 0.2);
+                assert.isAtMost((<HTMLElement>container.querySelector(".qp-root")).getBoundingClientRect().width, 300);
+            } finally {
+                container.remove();
+                tooltips.remove();
+            }
+        });
+
         it("Leaves alone a plan that fits, and any plan when the option is not set", () => {
             let wide = attached(5000);
             let narrow = attached(300);

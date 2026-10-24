@@ -29,8 +29,9 @@ if len(donnees) > LIMITE:
     sys.stdout.write("<p>Plan de plus de 32 Mo : le télécharger pour l'ouvrir dans SSMS.</p>")
     sys.exit(0)
 xml = donnees.decode("utf-8-sig", errors="replace")
-# Le plan entre dans un <script> : "</" fermerait la balise avant la fin de la chaîne
-plan = json.dumps(xml).replace("</", "<\\/")
+# Le plan entre dans un <script> : aucun "<" ne doit y rester ("</script>" fermerait la
+# balise, "<!--" en changerait la lecture)
+plan = json.dumps(xml).replace("<", "\\u003c")
 
 sys.stdout.write(f"""<!doctype html>
 <html lang="fr">

@@ -49,11 +49,18 @@ function showPlan(container: Element, planXml: string, options?: Options) {
  * toggle between that size and full size. CSS zoom keeps the lines and tooltips aligned.
  */
 function fitToWidth(container: Element, root: HTMLElement, minScale: number) {
-    let scale = Math.max(minScale, Math.min(1, container.clientWidth / container.scrollWidth));
+    // The plan's own width: the container's scrollWidth also counts hidden CSS tooltips
+    let scale = Math.max(minScale, Math.min(1, container.clientWidth / root.offsetWidth));
     if (!(scale < 1)) return;
     let style = <any>root.style;
     style.zoom = scale;
-    root.title = "Click to toggle full size";
+    // Text does not shrink exactly with zoom: correct once on the width actually drawn
+    let drawn = root.getBoundingClientRect().width;
+    if (drawn > container.clientWidth - 2) {
+        scale = Math.max(minScale, scale * (container.clientWidth - 2) / drawn);
+        style.zoom = scale;
+    }
+    // No title: the browser would show it over the operator tooltips
     root.style.cursor = "zoom-in";
     root.addEventListener("click", () => {
         let full = style.zoom != "1";
