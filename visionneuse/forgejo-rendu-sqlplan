@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Moteur de rendu externe de Forgejo pour les .sqlplan : lit le plan sur l'entrée
-standard et écrit une page HTML qui le dessine avec la bibliothèque servie par
-https://sqlplan.pachadata.com. Forgejo affiche cette page dans une iframe isolée
+"""Moteur de rendu externe de Forgejo pour les plans d'exécution : lit le plan sur
+l'entrée standard et écrit une page HTML qui le dessine avec les bibliothèques servies
+par https://sqlplan.pachadata.com, html-query-plan pour un .sqlplan de SQL Server,
+pev2 pour un .pgplan (EXPLAIN de PostgreSQL au format JSON). Forgejo affiche cette page dans une iframe isolée
 (RENDER_CONTENT_MODE = iframe), seul mode où le JavaScript s'exécute.
 
 Installé sur ryokan dans /usr/local/bin ; configuration dans /etc/forgejo/app.ini :
 
     [markup.sqlplan]
     ENABLED = true
-    FILE_EXTENSIONS = .sqlplan
+    FILE_EXTENSIONS = .sqlplan,.pgplan
     RENDER_COMMAND = /usr/local/bin/forgejo-rendu-sqlplan
     IS_INPUT_FILE = false
     RENDER_CONTENT_MODE = iframe
@@ -21,19 +22,21 @@ import json
 import sys
 
 BIBLIOTHEQUE = "https://sqlplan.pachadata.com/qp"
+PEV2 = "https://sqlplan.pachadata.com/pev2"
 
 # Le rendu tient le plan plusieurs fois en mémoire : au-delà, le fichier se télécharge
 LIMITE = 32 * 1024 * 1024
 donnees = sys.stdin.buffer.read(LIMITE + 1)
 if len(donnees) > LIMITE:
-    sys.stdout.write("<p>Plan de plus de 32 Mo : le télécharger pour l'ouvrir dans SSMS.</p>")
+    sys.stdout.write("<p>Plan de plus de 32 Mo : le télécharger pour l'ouvrir.</p>")
     sys.exit(0)
 xml = donnees.decode("utf-8-sig", errors="replace")
 # Le plan entre dans un <script> : aucun "<" ne doit y rester ("</script>" fermerait la
 # balise, "<!--" en changerait la lecture)
 plan = json.dumps(xml).replace("<", "\\u003c")
 
-sys.stdout.write(f"""<!doctype html>
+if xml.lstrip().startswith("<"):
+    sys.stdout.write(f"""<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -49,6 +52,53 @@ sys.stdout.write(f"""<!doctype html>
 <script>
 var conteneur = document.body.appendChild(document.createElement("div"));
 QP.showPlan(conteneur, {plan}, {{ theme: "auto", fitWidth: 0.6 }});
+</script>
+</body>
+</html>
+""")
+else:
+    # pev2 remplit son conteneur : il lui faut une hauteur, et le thème de Bootstrap
+    sys.stdout.write(f"""<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>
+// L'iframe de Forgejo est isolée (sandbox sans allow-same-origin) : lire localStorage y
+// lève une exception, et pev2 y range ses préférences d'affichage. Un stockage en mémoire
+// le remplace, perdu au rechargement.
+try {{ window.localStorage; }} catch (e) {{
+  var donnees = {{}};
+  Object.defineProperty(window, "localStorage", {{ configurable: true, value: {{
+    getItem: function (k) {{ return k in donnees ? donnees[k] : null; }},
+    setItem: function (k, v) {{ donnees[k] = String(v); }},
+    removeItem: function (k) {{ delete donnees[k]; }},
+    clear: function () {{ donnees = {{}}; }},
+    key: function (i) {{ return Object.keys(donnees)[i] || null; }},
+    get length() {{ return Object.keys(donnees).length; }}
+  }} }});
+}}
+</script>
+<link rel="stylesheet" href="{PEV2}/bootstrap.min.css">
+<link rel="stylesheet" href="{PEV2}/pev2.css">
+<script src="{PEV2}/vue.global.prod.js"></script>
+<script src="{PEV2}/pev2.umd.js"></script>
+<style>
+  body {{ margin: 0; }}
+  .pev2-plan {{ display: flex; flex-direction: column; height: 40rem; }}
+</style>
+</head>
+<body>
+<script>
+var sombre = window.matchMedia("(prefers-color-scheme: dark)");
+var theme = function () {{
+  document.documentElement.setAttribute("data-bs-theme", sombre.matches ? "dark" : "light");
+}};
+theme();
+sombre.addEventListener("change", theme);
+var conteneur = document.body.appendChild(document.createElement("div"));
+conteneur.className = "pev2-plan";
+var texte = {plan};
+Vue.createApp({{ render: function () {{ return Vue.h(pev2.Plan, {{ planSource: texte, planQuery: "" }}); }} }}).mount(conteneur);
 </script>
 </body>
 </html>

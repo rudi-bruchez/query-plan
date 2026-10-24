@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 # webpack 4 sous Node 17 et plus exige le fournisseur OpenSSL hérité
 NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production npx webpack >/dev/null
 rsync -a --delete --exclude=/qp/ --chmod=D755,F644 \
-  visionneuse/index.html visionneuse/plans \
+  visionneuse/index.html visionneuse/plans visionneuse/pev2 \
   ryokan:/var/www/sqlplan.pachadata.com/html/
 rsync -a --chmod=F644 dist/qp.min.js css/qp.css css/qp_icons.png \
   ryokan:/var/www/sqlplan.pachadata.com/html/qp/

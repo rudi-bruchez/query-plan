@@ -1,0 +1,3 @@
+pev2 1.24.0 (Dalibo, licence PostgreSQL : LICENSE-pev2.txt), Vue 3.5.43 (MIT) et
+Bootstrap 5.3.8 (MIT), copiés depuis leurs paquets npm (dist/). La visionneuse ne
+les charge que pour un plan PostgreSQL (.pgplan).
